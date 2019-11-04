@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<head>
+    <title>ProjectName User View</title>
+    <meta charset="UTF-8">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" type="text/css" href="../style/style.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="container-fluid">
+            <h1>My Projects:</h1>
+        </div>
+        <div id="project-display-container">
+        </div>
+    </div>
+    <script>
+        $(document).ready(function(){
+            getProjects(handleGetProjects);
+        });
+        let handleGetProjects = function(apiReturn){
+            if(apiReturn.success){
+                let projectCard = $('<div class="project-card"></div>');
+                projectCard.load("../frags/project-card.html", function() {
+                    for(let i = 0; i < apiReturn.projects.length; i++){
+                        addProjectCard(apiReturn.projects[i], projectCard.clone());
+                    }
+                });
+            }
+        };
+        function addProjectCard(project, projectCard){
+            let title = project.title;
+            let description = project.description;
+            let pid = project.pid;
+            projectCard.find('.project-card-title').text(title);
+            projectCard.find('.project-card-desc').text(description);
+            projectCard.data("pid", pid);
+            projectCard.find('.project-click-link').attr("href", "project_view.html?proj=" + pid);
+            $('#project-display-container').append(projectCard);
+        }
+    </script>
+    <script src="../js/grab.js"></script>
+    <script src="../js/util.js"></script>
+</body>
