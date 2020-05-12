@@ -2,6 +2,7 @@
 namespace App;
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
+require 'RoomAdapter.php';
 require 'Room.php';
 
 class Draw implements MessageComponentInterface {
@@ -41,15 +42,15 @@ class Draw implements MessageComponentInterface {
         //Add the client id to the message
         $msg->id = $from->resourceId;
         if($msg->type == "close-path"){
-            //$this->commitToData($msg->lineData, $msg->token, $msg->room);
+            $this->commitToData($msg->lineData, $msg->token, $msg->room);
         } else if($msg->type == "new-text"){
             $text_data = new \stdClass();
             $text_data->path = $msg->props;
-            //$this->commitToData($text_data, $msg->token, $msg->room);
+            $this->commitToData($text_data, $msg->token, $msg->room);
         } else if($msg->type == "new-image"){
             $img_data = new \stdClass();
             $img_data->path = $msg->props;
-            //$this->commitToData($img_data, $msg->token, $msg->room);
+            $this->commitToData($img_data, $msg->token, $msg->room);
         } else if($msg->type == "new-client"){
             $entity_id = $msg->cid;
             $room = $this->find_room($entity_id);
