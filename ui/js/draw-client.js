@@ -30,6 +30,8 @@ var artifacts = [];
 //My client id
 var me = -1;
 var drawConn = new WebSocket(wsNodeMap.draw);
+//Room index
+var room;
 
 var toolEditMenuOpen = false;
 
@@ -496,9 +498,6 @@ $('#upload-image-button').click(function(){
 
 function handleCommand(e){
     var drawCmd = JSON.parse(e);
-    if(!isRelevantCommand(drawCmd)){
-        return;
-    }
     var sendingClient;
     if(drawCmd.type === "new-path"){
         //Get the client corresponding to the sending client
@@ -525,6 +524,9 @@ function handleCommand(e){
             }
         });
     } else if(drawCmd.type === "new-client") {
+        if(roomAssignment === -1){
+            roomAssignment = drawCmd.room;
+        }
         //Register the new client with the user who just joined
         clients[drawCmd.id] = { id : drawCmd.id, paths : [] };
     } else if(drawCmd.type === "welcome"){
