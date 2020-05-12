@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<head>
+    <title>Index: ProjectName</title>
+    <meta charset="UTF-8">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" type="text/css" href="style/style.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-3"></div>
+            <div class="col-lg-6">
+                <div class="container-fluid">
+                    <h1>Welcome to Vibe</h1>
+                    <p>Enter user credentials or create a new account</p>
+                </div>
+                <div class="container-fluid">
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="login-username">Username: </label>
+                            <input type="text" id="login-username" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Password: </label>
+                            <input type="password" id="login-password" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="login-button">Login</button>
+                        <button type="submit" class="btn btn-primary" id="register-button">Register</button>
+                    </form>
+                </div>
+                <div class="container-fluid">
+                    <div class="modal" id="register-modal">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h4 class="modal-title" id="view-card-title"></h4>
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="register-form">
+                                        <div class="form-group">
+                                            <label for="firstName">First Name: </label>
+                                            <input type="text" id="firstName" class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="lastName">Last Name: </label>
+                                            <input type="text" id="lastName" class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="username">Username: </label>
+                                            <input type="text" id="username" class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="password">Password: </label>
+                                            <input type="password" id="password" class="form-control">
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button id="submit-button" type="button" class="btn btn-secondary" data-dismiss="modal">Submit</button>
+                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3"></div>
+        </div>
+    </div>
+    <script src="js/push.js"></script>
+    <script src="js/grab.js"></script>
+    <script src="js/util.js"></script>
+    <script src="js/disp-util.js"></script>
+    <script>
+        $(document).ready(function(){
+            let isDemo = window.location.href.includes("demo");
+            if(isDemo){
+                loginUser("sampleuser", "password", handleLogin);
+            }
+            //requestToken(handleToken);
+            $('#login-button').click(function(e){
+                e.preventDefault();
+                let usernameInput = $('#login-username').val();
+                let passwordInput = $('#login-password').val();
+                if(isValidLoginInput(usernameInput, passwordInput)){
+                    loginUser(usernameInput, passwordInput, handleLogin);
+                }
+            });
+            $('#register-button').click(function(e){
+                e.preventDefault();
+                $('#register-modal').modal();
+            });
+            $('#submit-button').click(function(e){
+                e.preventDefault();
+                registerUser(($('#firstName').val()), ($('#lastName').val()), ($('#username').val()), ($('#password').val()), handleUserRegister);
+            });
+        });
+        let handleToken = function(apiReturn){
+            if(!apiReturn){
+                alert("Could not connect to API.");
+            }
+            if(apiReturn.success){
+                setToken(apiReturn.token);
+            } else {
+                alert("API declined client connection. Sorry :(");
+            }
+            console.log("Connected to API with token: " + getToken());
+        };
+        let handleLogin = function(apiReturn){
+            if(apiReturn.success){
+                setUid(apiReturn.uid);
+                setUsername($('#login-username').val());
+                setFullName(apiReturn.name[0], apiReturn.name[1]);
+                //check if pid exists
+                let pidParam = window.location.search.replace("?", '');
+                let containsPid = pidParam.includes("pid");
+                pidParam = pidParam.replace("pid=", '');
+                if (pidParam !== '' && containsPid){
+                    giveAccess(getUid(), pidParam, handleGivenAccess);
+                }else{
+                    window.location.href = "pages/dash.html"
+                }
+            } else {
+                let authInputFail = apiReturn.message;
+                if(authInputFail === "username"){
+                    displayFormControlError($('#login-username'), "This user account does not exist");
+                } else if(authInputFail === "password"){
+                    displayFormControlError($('#login-password'), "Invalid password");
+                }
+            }
+        };
+        let handleGivenAccess = function(apiReturn){
+            if(apiReturn.success){
+                window.location.href="pages/project_view.html?proj=" + apiReturn.pid;
+            } else {
+                alert("Could not give access to the project");
+            }
+        };
+        function isValidLoginInput(username, password){
+            let isValid = true;
+            if(username === ""){
+                displayFormControlError($('#login-username'), "You must enter a username");
+                isValid = false;
+            }
+            if(password === ""){
+                displayFormControlError($('#login-password'), "You must enter a password");
+                isValid = false;
+            }
+            return isValid;
+        }
+        let handleUserRegister = function(apiReturn){
+            if(apiReturn.success){
+                setUid(apiReturn.uid);
+                setUsername($('#username').val());
+                setFullName($('#firstName').val(), $('#lastName').val());
+                window.location.href = "pages/project_view.html?proj=12e90b8e74f20fc0a7274cff9fcbae14592db12292757f1ea0d7503d30799fd2";
+            }
+        }
+    </script>
+</body>
