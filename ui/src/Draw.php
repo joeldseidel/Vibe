@@ -9,15 +9,12 @@ class Draw implements MessageComponentInterface {
     protected $clients;
     //All of the users that are connected to the drawing server
     private $connectedUsers;
-    private $connectedRooms;
-    private $rooms;
+    private $room_adapter;
     public function __construct()
     {
         $this->clients = new \SplObjectStorage();
         $this->connectedUsers = [];
-        $this->connectedRooms = array();
-        //Array for the actual room objects
-        $this->rooms = array();
+        $this->room_adapter = new RoomAdapter();
     }
     public function onOpen(ConnectionInterface $conn)
     {
@@ -53,53 +50,14 @@ class Draw implements MessageComponentInterface {
             $this->commitToData($img_data, $msg->token, $msg->room);
         } else if($msg->type == "new-client"){
             $entity_id = $msg->cid;
-            $room = $this->find_room($entity_id);
-            //Did a room get found?
-            if(is_null($room)){
-                //This room does not exist and must be created
-                //Create a new room object for the entity id
-                $new_room = new \App\Room($entity_id);
-                //Add this member, they are here by themselves for now
-                $new_room->add_member($from);
-                //There are no currently open rooms
-                array_push($this->rooms, $new_room);
-                $new_room->set_resource_index(sizeof($this->rooms) - 1);
-                echo "Created a new room for entity: " . $entity_id . "\n";
-                $room = $new_room;
-            } else {
-                //We did find the room! That means that the user must be bound to it
-                $room->add_member($from);
-            }
+            //Assign a room to this connecting client
+            $room = $this->room_adapter->assign_room($from, $entity_id);
             $msg->room = $room->get_resource_index();
         }
         //Get the room this message is supposed to go to
-        $destination_room = $this->rooms[$msg->room];
+        $destination_room = $this->room_adapter->get_room_at($msg->room);
         //Send message to all connected clients
         $this->sendMessage($destination_room, $msg);
-    }
-
-
-    /**
-     * Find the room in the room array and get the index/object reference of the room, if it is found
-     * @param $entity_id string entity id of the room we are looking for
-     * @return mixed|null either a room object or null if a room object is not found for the provided entity id
-     */
-    private function find_room($entity_id){
-        $room = null;
-        for($i = 0; $i < sizeof($this->rooms); $i++){
-            //Is there a room at this id number?
-            if(is_null($this->rooms[$i])){
-                //Nope
-                continue;
-            }
-            //Is this the room?
-            if($this->rooms[$i]->get_entity_id() == $entity_id){
-                //This room exists and is at the current index
-                //Set the room resource id to be that index
-                return $this->rooms[$i];
-            }
-        }
-        return null;
     }
 
     /**
